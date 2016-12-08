@@ -18,8 +18,8 @@ SDK_BASE	?= C:\Espressif\ESP8266_RTOS_SDK
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
-ESPPORT		?= COM8
-ESPBAUD		?= 500000
+ESPPORT		?= COM20
+ESPBAUD		?= 115200
 
 # BOOT = none
 # BOOT = old - boot_v1.1
@@ -34,7 +34,7 @@ SPI_SPEED?=40
 # SPI_MODE: QIO, QOUT, DIO, DOUT
 SPI_MODE?=QIO
 # SPI_SIZE: 256KB, 512KB, 1024KB, 2048KB, 4096KB
-SPI_SIZE?=4096
+SPI_SIZE?=1024
 
 
 ifeq ($(BOOT), new)
@@ -138,6 +138,16 @@ else
       ifeq ($(app), 2)
         addr = 0x101000
       endif
+    endif
+  endif
+endif
+
+ifeq ($(flash), 1024)
+  ifeq ($(app), 1)
+    addr = 0x01000
+  else
+    ifeq ($(app), 2)
+      addr = 0x81000
     endif
   endif
 endif
@@ -363,7 +373,7 @@ $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
 
 #OTA CONFIG
-ESP_IP ?= 192.168.50.236
+ESP_IP ?= 192.168.50.109
 ESP_PORT ?= 24
 PYTHON_EXEC ?= C:/Python27/python.exe
 
@@ -378,11 +388,11 @@ flash_ota:
 	@$(MAKE) -f $(THIS_FILE) clean # Limpa tudo antes de iniciar	
 ifeq ($(SOFTWARE_CURRENT_USERBIN), 0) 
 	$(MAKE) -f $(THIS_FILE) all BOOT=new APP=2 # Se atualmente esta usando app1 deve compilar app2
-	$(PYTHON_EXEC) $(PYTHON_ESPOTA_FILE) send $(ESP_IP) $(ESP_PORT) $(FW_BASE)/upgrade/user2.2048.new.bin
+	$(PYTHON_EXEC) $(PYTHON_ESPOTA_FILE) send $(ESP_IP) $(ESP_PORT) $(FW_BASE)/upgrade/user2.1024.new.bin
 endif
 ifeq ($(SOFTWARE_CURRENT_USERBIN), 1)
 	$(MAKE) -f $(THIS_FILE) all BOOT=new APP=1 # Se atualmente esta usando app2 deve compilar app1
-	$(PYTHON_EXEC) $(PYTHON_ESPOTA_FILE) send $(ESP_IP) $(ESP_PORT) $(FW_BASE)/upgrade/user1.2048.new.bin
+	$(PYTHON_EXEC) $(PYTHON_ESPOTA_FILE) send $(ESP_IP) $(ESP_PORT) $(FW_BASE)/upgrade/user1.1024.new.bin
 endif
 ifeq ($(SOFTWARE_CURRENT_USERBIN), ERROR)
 	@echo N�o foi possivel se conectar com o ESP pelo ip $(ESP_IP) e porta $(ESP_PORT)

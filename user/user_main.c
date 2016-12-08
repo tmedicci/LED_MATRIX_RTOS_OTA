@@ -24,7 +24,7 @@
 
 #include "espressif/esp_common.h"
 #include "espressif/esp_system.h"
-
+#include "espressif/spi_flash.h"
 
 #include "user_config.h"
 #include "freertos/queue.h"
@@ -48,7 +48,6 @@ void ICACHE_FLASH_ATTR wifiConnectCb(System_Event_t *evt)
 		printf("connected to ssid %s, channel %d\n",
 				evt->event_info.connected.ssid,
 				evt->event_info.connected.channel);
-
 
 		break;
 	case EVENT_STAMODE_DISCONNECTED:
@@ -99,8 +98,20 @@ void user_init(void)
 	struct station_config stconfig;
 
 	uartQueue = xQueueCreate(500, 1);
+//	UART_SetBaudrate(UART0, BIT_RATE_9600);
+//	UART_ConfigTypeDef uart_config;
+//	uart_config.baud_rate    = BIT_RATE_74880;
+//	uart_config.data_bits     = UART_WordLength_8b;
+//	uart_config.parity          = USART_Parity_None;
+//	uart_config.stop_bits     = USART_StopBits_1;
+//	uart_config.flow_ctrl      = USART_HardwareFlowControl_None;
+//	uart_config.UART_RxFlowThresh = 120;
+//	uart_config.UART_InverseMask = UART_None_Inverse;
+//	UART_ParamConfig(UART0, &uart_config);
+//	UART_SetPrintPort(UART0);
 	espconn_init();
-	printf("SDK version:%s\r\n", system_get_sdk_version());
+	DEBUG_WRITER_1P("SDK version:%s\r\n", system_get_sdk_version());
+	//UART_SetPrintPort(UART0);
 
 	wifi_set_opmode(STATION_MODE);
 	if(wifi_station_get_config(&stconfig))
@@ -110,7 +121,7 @@ void user_init(void)
 		wifi_station_set_config(&stconfig);
 		printf("SSID: %s\n",stconfig.ssid);
 	}
-
+	printf("Hello World\n\n");
 	wifi_set_event_handler_cb(wifiConnectCb);
 	config_server_init(24);
 }

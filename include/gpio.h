@@ -25,11 +25,13 @@
 #ifndef __GPIO_H__
 #define __GPIO_H__
 
+#include "espressif/esp_common.h"
+#include "espressif/esp_system.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdint.h>
 
 #define GPIO_Pin_0              (BIT(0))  /* Pin 0 selected */
 #define GPIO_Pin_1              (BIT(1))  /* Pin 1 selected */
