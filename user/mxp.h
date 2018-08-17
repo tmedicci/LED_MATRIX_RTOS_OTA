@@ -30,7 +30,9 @@
 #define MXP_UDP_PORT 2711
 #define MXP_MAXLEN 300
 
-/*** Setup Server, start listening ***/
-void mxp_init();
+
+typedef void (*led_callback)(uint8_t buffer[][3], uint16_t pixels, uint16_t offset);
+
+void mxp_init(led_callback led_cb);
 
 #endif

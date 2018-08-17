@@ -21,58 +21,57 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
+#include <ets_sys.h>
+#include <string.h>
+#include "user_interface.h"
+#include <os_type.h>
+#include "driver/uart.h"
+#include <gpio.h>
+#include "espconn.h"
+#include "ws2811dma.h"
+#include "mxp.h"
 
-#include "espressif/esp_common.h"
-#include "espressif/esp_system.h"
-#include "espressif/spi_flash.h"
-
-#include "user_config.h"
-#include "freertos/queue.h"
-#include "gpio.h"
 
 static struct ip_info ipConfig;
 unsigned char *p = (unsigned char*)&ipConfig.ip.addr;
-struct global_struct GLOBAL_CONF;
-
-//#define WIFI_CLIENTSSID		"Time Energy"
-//#define WIFI_CLIENTPASSWORD	"@cessorestrito!"
 
 #define WIFI_CLIENTSSID		"LHC"
 #define WIFI_CLIENTPASSWORD	"tijolo22"
 
+extern int ets_uart_printf(const char *fmt, ...);
+
 void ICACHE_FLASH_ATTR wifiConnectCb(System_Event_t *evt)
 {
-	printf("Wifi event: %d\r\n", evt->event_id);
-	switch (evt->event_id) {
+	ets_uart_printf("Wifi event: %d\r\n", evt->event);
+	switch (evt->event) {
 	case EVENT_STAMODE_CONNECTED:
-		printf("connected to ssid %s, channel %d\n",
+		ets_uart_printf("connected to ssid %s, channel %d\n",
 				evt->event_info.connected.ssid,
 				evt->event_info.connected.channel);
 
 		break;
 	case EVENT_STAMODE_DISCONNECTED:
-		printf("disconnected from ssid %s, reason %d\n",
+		ets_uart_printf("disconnected from ssid %s, reason %d\n",
 				evt->event_info.disconnected.ssid,
 				evt->event_info.disconnected.reason);
 		break;
 	case EVENT_STAMODE_AUTHMODE_CHANGE:
-		printf("mode: %d -> %d\n",
+		ets_uart_printf("mode: %d -> %d\n",
 				evt->event_info.auth_change.old_mode,
 				evt->event_info.auth_change.new_mode);
 		break;
 	case EVENT_STAMODE_GOT_IP:
 		wifi_get_ip_info(STATION_IF, &ipConfig);
-		printf("%d.%d.%d.%d\n\n",p[0],p[1],p[2],p[3]);
-//		char ipBuf[] = {192, 168, 0, 109};
-//		handleUpgrade(2, ipBuf, 8000, "/");
+		ets_uart_printf("%d.%d.%d.%d\n\nListening to UDP packages for LED display...",p[0],p[1],p[2],p[3]);
+		mxp_init(ws2811dma_put);
 		break;
 	case EVENT_SOFTAPMODE_STACONNECTED:
-		printf("station: " MACSTR "join, AID = %d\n",
+		ets_uart_printf("station: " MACSTR "join, AID = %d\n",
 				MAC2STR(evt->event_info.sta_connected.mac),
 				evt->event_info.sta_connected.aid);
 		break;
 	case EVENT_SOFTAPMODE_STADISCONNECTED:
-		printf("station: " MACSTR "leave, AID = %d\n",
+		ets_uart_printf("station: " MACSTR "leave, AID = %d\n",
 				MAC2STR(evt->event_info.sta_disconnected.mac),
 				evt->event_info.sta_disconnected.aid);
 		break;
@@ -81,6 +80,50 @@ void ICACHE_FLASH_ATTR wifiConnectCb(System_Event_t *evt)
 	}
 }
 
+/******************************************************************************
+ * FunctionName : user_rf_cal_sector_set
+ * Description  : SDK just reversed 4 sectors, used for rf init data and paramters.
+ *                We add this function to force users to set rf cal sector, since
+ *                we don't know which sector is free in user's application.
+ *                sector map for last several sectors : ABBBCDDD
+ *                A : rf cal
+ *                B : at parameters
+ *                C : rf init data
+ *                D : sdk parameters
+ * Parameters   : none
+ * Returns      : rf cal sector
+*******************************************************************************/
+uint32 ICACHE_FLASH_ATTR user_rf_cal_sector_set(void)
+{
+    enum flash_size_map size_map = system_get_flash_size_map();
+    uint32 rf_cal_sec = 0;
+
+    switch (size_map) {
+        case FLASH_SIZE_4M_MAP_256_256:
+            rf_cal_sec = 128 - 8;
+            break;
+
+        case FLASH_SIZE_8M_MAP_512_512:
+            rf_cal_sec = 256 - 5;
+            break;
+
+        case FLASH_SIZE_16M_MAP_512_512:
+        case FLASH_SIZE_16M_MAP_1024_1024:
+            rf_cal_sec = 512 - 5;
+            break;
+
+        case FLASH_SIZE_32M_MAP_512_512:
+        case FLASH_SIZE_32M_MAP_1024_1024:
+            rf_cal_sec = 1024 - 5;
+            break;
+
+        default:
+            rf_cal_sec = 0;
+            break;
+    }
+
+    return rf_cal_sec;
+}
 
 void user_rf_pre_init(void){
 
@@ -95,23 +138,12 @@ void user_rf_pre_init(void){
 *******************************************************************************/
 void user_init(void)
 {
-	struct station_config stconfig;
+	// Configure the UART
+	//uart_init(BIT_RATE_115200, BIT_RATE_115200);
 
-	uartQueue = xQueueCreate(500, 1);
-//	UART_SetBaudrate(UART0, BIT_RATE_9600);
-//	UART_ConfigTypeDef uart_config;
-//	uart_config.baud_rate    = BIT_RATE_74880;
-//	uart_config.data_bits     = UART_WordLength_8b;
-//	uart_config.parity          = USART_Parity_None;
-//	uart_config.stop_bits     = USART_StopBits_1;
-//	uart_config.flow_ctrl      = USART_HardwareFlowControl_None;
-//	uart_config.UART_RxFlowThresh = 120;
-//	uart_config.UART_InverseMask = UART_None_Inverse;
-//	UART_ParamConfig(UART0, &uart_config);
-//	UART_SetPrintPort(UART0);
 	espconn_init();
-	DEBUG_WRITER_1P("SDK version:%s\r\n", system_get_sdk_version());
-	//UART_SetPrintPort(UART0);
+	ets_uart_printf("SDK version:%s\r\n", system_get_sdk_version());
+	static struct station_config stconfig;
 
 	wifi_set_opmode(STATION_MODE);
 	if(wifi_station_get_config(&stconfig))
@@ -119,9 +151,11 @@ void user_init(void)
 		memcpy(&stconfig.ssid, WIFI_CLIENTSSID, sizeof(WIFI_CLIENTSSID));
 		memcpy(&stconfig.password, WIFI_CLIENTPASSWORD, sizeof(WIFI_CLIENTPASSWORD));
 		wifi_station_set_config(&stconfig);
-		printf("SSID: %s\n",stconfig.ssid);
+		ets_uart_printf("SSID: %s\n",stconfig.ssid);
 	}
-	printf("Hello World\n\n");
+	ets_uart_printf("Hello World\n\n");
 	wifi_set_event_handler_cb(wifiConnectCb);
-	config_server_init(24);
+
+	ets_uart_printf("Initializing WS2811...\n\n");
+	ws2811dma_init();
 }

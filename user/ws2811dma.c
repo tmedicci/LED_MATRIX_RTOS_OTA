@@ -1,12 +1,16 @@
-// System
-
-#include <gpio.h>
+#include <ets_sys.h>
+#include <string.h>
+#include <eagle_soc.h>
 #include <stdint.h>
+#include <user_interface.h>
+#include <os_type.h>
+#include <osapi.h>
 
 // Project
 #include "ws2811dma.h"
 #include "slc_register.h"
 #include "i2s_reg.h"
+
 
 /*
  * Raw WS2811 output data storage:
@@ -22,8 +26,8 @@ void ws2811dma_init() {
 	os_delay_us(100);
 
 	/*** Prefill tape with zeros ***/
-	os_memset(tape, WS_BIT0 | (WS_BIT0<<4), sizeof(tape) - WS_BREAK_BYTES);
-	os_memset((void *)(((uint32_t)tape) - WS_BREAK_BYTES), 0, WS_BREAK_BYTES);
+	memset(tape, WS_BIT0 | (WS_BIT0<<4), sizeof(tape) - WS_BREAK_BYTES);
+	memset((void *)(((uint32_t)tape) - WS_BREAK_BYTES), 0, WS_BREAK_BYTES);
 
 	/*
 	 * DMA (Direct Memory Access) using SLC controller to fill I²S FIFO:
