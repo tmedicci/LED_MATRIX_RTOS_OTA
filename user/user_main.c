@@ -30,13 +30,14 @@
 #include "espconn.h"
 #include "ws2811dma.h"
 #include "mxp.h"
-
+#include "user_config.h"
 
 static struct ip_info ipConfig;
 unsigned char *p = (unsigned char*)&ipConfig.ip.addr;
 
-#define WIFI_CLIENTSSID		"LHC"
-#define WIFI_CLIENTPASSWORD	"tijolo22"
+/* User AP config is defined in wifi_config.h, make sure to create this file and associate USER_SSID and USER_PASS*. This file will not be versioned.*/
+#define WIFI_CLIENTSSID			USER_SSID
+#define WIFI_CLIENTPASSWORD		USER_PASS
 
 extern int ets_uart_printf(const char *fmt, ...);
 
@@ -139,13 +140,16 @@ void user_rf_pre_init(void){
 void user_init(void)
 {
 	// Configure the UART
-	//uart_init(BIT_RATE_115200, BIT_RATE_115200);
+	uart_init(BIT_RATE_115200, BIT_RATE_115200);
 
 	espconn_init();
 	ets_uart_printf("SDK version:%s\r\n", system_get_sdk_version());
 	static struct station_config stconfig;
 
 	wifi_set_opmode(STATION_MODE);
+	wifi_station_disconnect();
+	wifi_station_dhcpc_stop();
+	wifi_station_set_auto_connect(0);
 	if(wifi_station_get_config(&stconfig))
 	{
 		memcpy(&stconfig.ssid, WIFI_CLIENTSSID, sizeof(WIFI_CLIENTSSID));
@@ -153,6 +157,14 @@ void user_init(void)
 		wifi_station_set_config(&stconfig);
 		ets_uart_printf("SSID: %s\n",stconfig.ssid);
 	}
+
+	IP4_ADDR(&ipConfig.ip, 192, 168, 50, 15);
+	IP4_ADDR(&ipConfig.gw, 192, 168, 50, 1);
+	IP4_ADDR(&ipConfig.netmask, 255, 255, 255, 0);
+
+	wifi_set_ip_info(STATION_IF, &ipConfig);
+	wifi_station_set_auto_connect(1);
+	wifi_station_connect();
 	ets_uart_printf("Hello World\n\n");
 	wifi_set_event_handler_cb(wifiConnectCb);
 
