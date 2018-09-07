@@ -13,6 +13,7 @@
 
 // Project
 #include "mxp.h"
+#include "user_config.h"
 
 led_callback callback;
 

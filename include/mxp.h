@@ -3,7 +3,6 @@
  * protocol for LED Matrix / LED Strip data communication.
  * Compatible with: https://github.com/Jeija/WS2811LEDMatrix
  *
- * UDP Port 2711
  *
  * ############################
  * LED Matrix UDP Data Protocol
@@ -25,10 +24,6 @@
 
 #ifndef _MXP_H
 #define _MXP_H
-
-// Configuration: UDP port and maximum number of LEDs in payload
-#define MXP_UDP_PORT 2711
-#define MXP_MAXLEN 300
 
 
 typedef void (*led_callback)(uint8_t buffer[][3], uint16_t pixels, uint16_t offset);
